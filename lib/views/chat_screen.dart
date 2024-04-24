@@ -14,16 +14,21 @@ class _ChatScreenState extends State<ChatScreen> {
   late ChatSession _chat;
   final TextEditingController _chatController = TextEditingController();
   final List<Map<String, dynamic>> _chatHistory = [];
-
   void getResponse(String text) async {
-    final content = [Content.text(text)];
-    var response = await _chat.sendMessage(content);
-    _chatHistory.add({
-      "time": DateTime.now(),
-      "message": _chatController.text.trim(),
-      "isUser": true,
-      "isImage": false,
-    });
+    try {
+      final content = Content.text(text);
+      var response = await _chat.sendMessage(content);
+      setState(() {
+        _chatHistory.add({
+          "time": DateTime.now(),
+          "message": response.text,
+          "isUser": false,
+          "isImage": false,
+        });
+      });
+    } catch (e) {
+      print('Error sending message: $e');
+    }
   }
 
   @override
@@ -38,6 +43,7 @@ class _ChatScreenState extends State<ChatScreen> {
     return Scaffold(
       appBar: AppBar(
         title: const Text("Chat Screen"),
+        centerTitle: true,
       ),
       body: SafeArea(
         child: Column(
@@ -48,7 +54,7 @@ class _ChatScreenState extends State<ChatScreen> {
                   itemBuilder: (context, index) {
                     final message = _chatHistory.elementAt(index);
                     return ListTile(
-                      tileColor: message["isUser"] ? Colors.green : Colors.red,
+                      tileColor: message["isUser"] ? Colors.pink : Colors.white,
                       title: Text(message["message"]),
                     );
                   }),
@@ -60,8 +66,9 @@ class _ChatScreenState extends State<ChatScreen> {
                 const SizedBox(
                   width: 4,
                 ),
-                const Expanded(
+                Expanded(
                   child: TextField(
+                    controller: _chatController,
                     decoration: InputDecoration(hintText: "Type your message"),
                   ),
                 ),
@@ -70,20 +77,20 @@ class _ChatScreenState extends State<ChatScreen> {
                 ),
                 IconButton(
                     onPressed: () {
-                      if (_chatController.text.trim().isEmpty) {
-                        return;
-                      }
-
-                      _chatHistory.add({
-                        "time": DateTime.now(),
-                        "message": _chatController.text.trim(),
-                        "isUser": true,
-                        "isImage": false,
+                      setState(() {
+                        if (_chatController.text.trim().isEmpty) {
+                          return;
+                        }
+                        final userInput = _chatController.text.trim();
+                        _chatHistory.add({
+                          "time": DateTime.now(),
+                          "message": _chatController.text,
+                          "isUser": true,
+                          "isImage": false,
+                        });
+                        getResponse(userInput);
+                        _chatController.clear();
                       });
-
-                      getResponse(_chatController.text.trim());
-                      _chatController.clear;
-                      setState(() {});
                     },
                     icon: const Icon(Icons.send)),
               ],
